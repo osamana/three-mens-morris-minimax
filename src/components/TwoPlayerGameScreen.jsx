@@ -212,7 +212,7 @@ const reducer = (state, { type, payload }) => {
   }
 };
 
-export default function GameScreen({ onRestart }) {
+export default function TwoPlayerGameScreen({ onRestart }) {
   // three men's morris game logic
   // player 1 is a
   // player 2 is b
@@ -233,7 +233,7 @@ export default function GameScreen({ onRestart }) {
 
   return (
     <div>
-      <h1>Game Screen</h1>
+      <h1>Game Screen (Human vs Human)</h1>
       <p>
         Difficulty: {difficulty} | Number of players: {number_of_players}
       </p>

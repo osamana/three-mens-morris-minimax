@@ -1,7 +1,8 @@
 import "./App.css";
 import { useState, createContext } from "react";
 import StartScreen from "./components/StartScreen";
-import GameScreen from "./components/GameScreen";
+import TwoPlayerGameScreen from "./components/TwoPlayerGameScreen";
+import OnePlayerGameScreen from "./components/OnePlayerGameScreen";
 import FinishScreen from "./components/FinishScreen";
 import Header from "./components/Header";
 
@@ -42,7 +43,12 @@ function App() {
             setNumberOfPlayers={setNumberOfPlayers}
           />
         )}
-        {gameScreen === "game" && <GameScreen onRestart={restartGame} />}
+        {gameScreen === "game" && number_of_players == 2 && (
+          <TwoPlayerGameScreen onRestart={restartGame} />
+        )}
+        {gameScreen === "game" && number_of_players == 1 && (
+          <OnePlayerGameScreen onRestart={restartGame} />
+        )}
         {gameScreen === "finish" && <FinishScreen onRestart={restartGame} />}
       </div>
     </AppContext.Provider>
