@@ -589,7 +589,7 @@ const reducer = (state, { type, payload }) => {
   if (state.is_placement_phase) {
     // placement phase...
     let new_state = placePiece(state, payload);
-    new_state = doComputerTurn(new_state); // this changes the player, flips it back to player a
+    new_state = doComputerTurn(JSON.parse(JSON.stringify(new_state))); // this changes the player, flips it back to player a
     // check if placement phase is over
     if (isPlacementComplete(new_state.board)) {
       new_state.is_placement_phase = false;
@@ -615,7 +615,9 @@ const reducer = (state, { type, payload }) => {
     }
 
     // if a piece is selected, move it to the new cell
-    return doComputerTurn(moveSelectedPiece(state, payload));
+    return doComputerTurn(
+      JSON.parse(JSON.stringify(moveSelectedPiece(state, payload)))
+    );
   } else {
     return selectPiece(state, payload);
   }
