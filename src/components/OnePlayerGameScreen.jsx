@@ -501,24 +501,87 @@ const minimaxWithAlphaBetaPruning = (
   }
 };
 
-const doComputerTurn = (state) => {
+const getValidRandomMoveForPlayerB = (state) => {
+  // the board size is 3x3
+  // define the list of possible moves
+  const moves = [];
+
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      // if it is a placement move
+      if (state.is_placement_phase) {
+        if (state.board[row][col] === null) {
+          moves.push({ location: [row, col], direction: null });
+        }
+      } else {
+        // if it is a movement move
+        // check if there is a piece in the cell
+        if (state.board[row][col] === "b") {
+          // check if the piece can move left
+          if (col > 0 && state.board[row][col - 1] === null) {
+            moves.push({ location: [row, col], direction: "left" });
+          }
+          // check if the piece can move right
+          if (col < 2 && state.board[row][col + 1] === null) {
+            moves.push({ location: [row, col], direction: "right" });
+          }
+          // check if the piece can move up
+          if (row > 0 && state.board[row - 1][col] === null) {
+            moves.push({ location: [row, col], direction: "up" });
+          }
+          // check if the piece can move down
+          if (row < 2 && state.board[row + 1][col] === null) {
+            moves.push({ location: [row, col], direction: "down" });
+          }
+        }
+      }
+    }
+  }
+
+  // return a random move
+  return moves[Math.floor(Math.random() * moves.length)];
+};
+
+const getNextComputerMove = (state, difficulty) => {
+  if (difficulty === "easy") {
+    // do random move
+    const move = getValidRandomMoveForPlayerB(
+      JSON.parse(JSON.stringify(state))
+    );
+    console.log("> valid move for b is: ", JSON.stringify(move));
+    return move;
+  }
+  if (difficulty === "normal") {
+    // randomly choose between random move and minimax
+    const random = Math.random();
+    if (random < 0.5) {
+      return getValidRandomMoveForPlayerB(JSON.parse(JSON.stringify(state)));
+    }
+    return minimax(state, 3, true);
+  }
+  if (difficulty === "hard") {
+    // apply minimax algorithm to determine best move
+    const depth = randIntBetween(MINIMAX_DEPTH_MIN, MINIMAX_DEPTH_MAX); // we don't want the user to expect the computer to always make the same move
+    const move = minimaxWithAlphaBetaPruning(
+      JSON.parse(JSON.stringify(state)),
+      depth,
+      true,
+      -Infinity,
+      Infinity
+    );
+    console.log("> best move is: ", JSON.stringify(move));
+    return move;
+  }
+};
+
+const doComputerTurn = (state, difficulty) => {
   /* sample move object
     move = {location: [row, col], direction: "left"} // if direction is null, it is a placement move
   */
 
   // current player is already computer
   let new_state = { ...state };
-
-  // apply minimax algorithm to determine best move
-  const depth = randIntBetween(MINIMAX_DEPTH_MIN, MINIMAX_DEPTH_MAX); // we don't want the user to expect the computer to always make the same move
-  const move = minimaxWithAlphaBetaPruning(
-    JSON.parse(JSON.stringify(new_state)),
-    depth,
-    true,
-    -Infinity,
-    Infinity
-  );
-  console.log("> best move is: ", JSON.stringify(move));
+  const move = getNextComputerMove(new_state, difficulty);
 
   if (move) {
     // do move
@@ -560,13 +623,8 @@ const doComputerTurn = (state) => {
       };
     }
 
-    // printing the board after the move
-    console.log("board after move");
-    console.log(new_state.board);
-
     // check for winner
     if (boardHasAtLeastPieces(new_state.board, 5)) {
-      console.log("checking for winner");
       // check for winner
       const winner = checkForWinner({
         ...new_state,
@@ -589,7 +647,10 @@ const reducer = (state, { type, payload }) => {
   if (state.is_placement_phase) {
     // placement phase...
     let new_state = placePiece(state, payload);
-    new_state = doComputerTurn(JSON.parse(JSON.stringify(new_state))); // this changes the player, flips it back to player a
+    new_state = doComputerTurn(
+      JSON.parse(JSON.stringify(new_state)),
+      payload.difficulty
+    ); // this changes the player, flips it back to player a
     // check if placement phase is over
     if (isPlacementComplete(new_state.board)) {
       new_state.is_placement_phase = false;
@@ -616,7 +677,8 @@ const reducer = (state, { type, payload }) => {
 
     // if a piece is selected, move it to the new cell
     return doComputerTurn(
-      JSON.parse(JSON.stringify(moveSelectedPiece(state, payload)))
+      JSON.parse(JSON.stringify(moveSelectedPiece(state, payload))),
+      payload.difficulty
     );
   } else {
     return selectPiece(state, payload);
