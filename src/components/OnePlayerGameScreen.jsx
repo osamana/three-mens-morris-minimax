@@ -2,6 +2,7 @@ import { useContext, useState, useReducer } from "react";
 import { AppContext } from "../App";
 import GameBoard from "./GameBoard";
 
+const MINIMAX_DEPTH = 2;
 const WINNING_COMBINATIONS = [
   [
     [0, 0],
@@ -211,41 +212,69 @@ const playerHasTwoInALine = (board, player) => {
   return false;
 };
 
-const heuristicOf = (state, isMaximizing) => {
+const playerHasTwoInALineAndThirdIsEmpty = (board, player) => {
+  for (let combination of WINNING_COMBINATIONS) {
+    let count = 0;
+    let empty = null;
+    for (let [row, cell] of combination) {
+      if (board[row][cell] === player) {
+        count++;
+      } else if (board[row][cell] === null) {
+        empty = [row, cell];
+      }
+    }
+    if (count === 2 && empty !== null) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const heuristicOf = (state) => {
   const winner = checkForWinner(state);
   if (winner) {
     if (winner === "a") {
-      return isMaximizing ? -10 : 10;
+      return -10;
     } else {
       // winner is b
-      return isMaximizing ? 10 : -10;
+      return 10;
     }
+  } else {
+    if (
+      state.is_placement_phase &&
+      playerHasTwoInALineAndThirdIsEmpty(state.board, "a")
+    ) {
+      console.log("a has two in a line and third is empty");
+      return -5;
+    } else if (
+      state.is_placement_phase &&
+      playerHasTwoInALineAndThirdIsEmpty(state.board, "b")
+    ) {
+      console.log("b has two in a line and third is empty");
+      return 5;
+    } else if (
+      !state.is_placement_phase &&
+      playerHasTwoInALine(state.board, "a")
+    ) {
+      console.log("a has two in a line");
+      return -5;
+    } else if (
+      !state.is_placement_phase &&
+      playerHasTwoInALine(state.board, "b")
+    ) {
+      console.log("b has two in a line");
+      return 5;
+    } else {
+      return 0;
+    }
+    return 0;
   }
-  // no winner
-  // remember: there are no draws in this game
-  // see if we can win
-  // if (isMaximizing) {
-  //   if (playerHasTwoInALine(state.board, "b")) {
-  //     // could be a row, column. not a diagonal
-  //     return 5;
-  //   } else if (playerHasTwoInALine(state.board, "a")) {
-  //     return -5;
-  //   }
-  // } else {
-  //   if (playerHasTwoInALine(state.board, "a")) {
-  //     // could be a row, column. not a diagonal
-  //     return 5;
-  //   } else if (playerHasTwoInALine(state.board, "b")) {
-  //     return -5;
-  //   }
-  // }
-  return 0;
 };
 
 const minimax = (state, depth, isMaximizing) => {
   // check for terminal state or depth 0. must be aware of isMaximizing
   if (isTerminalState(state) || depth === 0) {
-    return { score: heuristicOf(state, isMaximizing) };
+    return { score: heuristicOf(state) };
   }
 
   // the board size is 3x3
@@ -360,7 +389,11 @@ const doComputerTurn = (state) => {
   let new_state = { ...state };
 
   // apply minimax algorithm to determine best move
-  const move = minimax(JSON.parse(JSON.stringify(new_state)), 2, true);
+  const move = minimax(
+    JSON.parse(JSON.stringify(new_state)),
+    MINIMAX_DEPTH,
+    true
+  );
   console.log("> best move is: ", JSON.stringify(move));
 
   if (move) {
@@ -497,6 +530,7 @@ export default function OnePlayerGameScreen({ onRestart }) {
         selected_cell={state.selected_piece}
         dispatch={dispatch}
         winner={state.winner}
+        role={state.current_player}
       />
 
       <p>{state.instruction_text}</p>

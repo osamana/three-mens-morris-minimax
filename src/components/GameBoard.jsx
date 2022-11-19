@@ -1,9 +1,19 @@
-export default function GameBoard({ board, winner, selected_cell, dispatch }) {
+export default function GameBoard({
+  board,
+  winner,
+  selected_cell,
+  dispatch,
+  role,
+}) {
   // board is a two dimensional array 3x3
   return (
     <div>
       <h1>Game Board</h1>
-      {winner && <h2>Winner: {winner}</h2>}
+      {winner && (
+        <h2 style={{ color: "blue" }}>
+          Winner: {winner === "a" ? "Human - A" : "Computer - B"}
+        </h2>
+      )}
 
       <div className={`board ${winner ? "disabled" : ""}`}>
         {board.map((row, row_index) => {
