@@ -358,12 +358,145 @@ const minimax = (state, depth, isMaximizing) => {
     }
   }
 
-  // if (depth === 2) {
-  //   console.log("best move is: ", JSON.stringify(best_move));
-  // }
   if (best_move) {
     return best_move;
   } else {
+    return { score: 0 };
+  }
+};
+
+// minimax with alpha beta pruning
+const minimaxWithAlphaBetaPruning = (
+  state,
+  depth,
+  isMaximizing,
+  alpha,
+  beta
+) => {
+  // check for terminal state or depth 0. must be aware of isMaximizing
+  if (isTerminalState(state) || depth === 0) {
+    return { score: heuristicOf(JSON.parse(JSON.stringify(state))) };
+  }
+
+  // the board size is 3x3
+  // define the list of possible moves
+  const moves = [];
+
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      // if it is a placement move
+      if (state.is_placement_phase) {
+        if (state.board[row][col] === null) {
+          moves.push({ location: [row, col], direction: null });
+        }
+      } else {
+        // if it is a movement move
+        // check if there is a piece in the cell
+        if (state.board[row][col] === (isMaximizing ? "b" : "a")) {
+          // check if the piece can move left
+          if (col > 0 && state.board[row][col - 1] === null) {
+            moves.push({ location: [row, col], direction: "left" });
+          }
+          // check if the piece can move right
+          if (col < 2 && state.board[row][col + 1] === null) {
+            moves.push({ location: [row, col], direction: "right" });
+          }
+          // check if the piece can move up
+          if (row > 0 && state.board[row - 1][col] === null) {
+            moves.push({ location: [row, col], direction: "up" });
+          }
+          // check if the piece can move down
+          if (row < 2 && state.board[row + 1][col] === null) {
+            moves.push({ location: [row, col], direction: "down" });
+          }
+        }
+      }
+    }
+  }
+
+  // loop and evaluate each move
+  for (let move of moves) {
+    // make a copy of the state
+    const new_state = JSON.parse(JSON.stringify(state));
+
+    // make the move
+    if (move.direction === null) {
+      // placement move
+      new_state.board[move.location[0]][move.location[1]] = isMaximizing
+        ? "b"
+        : "a";
+      new_state.is_placement_phase = isPlacementComplete(new_state.board)
+        ? false
+        : true;
+    } else {
+      // movement move
+      const [row, col] = move.location;
+      new_state.board[row][col] = null;
+      if (move.direction === "left") {
+        new_state.board[row][col - 1] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "right") {
+        new_state.board[row][col + 1] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "up") {
+        new_state.board[row - 1][col] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "down") {
+        new_state.board[row + 1][col] = isMaximizing ? "b" : "a";
+      }
+    }
+
+    // switch player
+    new_state.current_player = isMaximizing ? "a" : "b";
+
+    // evaluate the move
+    const result = minimaxWithAlphaBetaPruning(
+      new_state,
+      depth - 1,
+      !isMaximizing,
+      alpha,
+      beta
+    );
+    move.score = result.score;
+
+    // alpha beta pruning
+    if (isMaximizing) {
+      alpha = Math.max(alpha, move.score);
+      if (beta <= alpha) {
+        break;
+      }
+    } else {
+      beta = Math.min(beta, move.score);
+      if (beta <= alpha) {
+        break;
+      }
+    }
+  }
+
+  // find the best move
+  let best_move;
+  if (isMaximizing) {
+    let best_score = -Infinity;
+    for (let move of moves) {
+      if (move.score > best_score) {
+        best_score = move.score;
+        best_move = move;
+      }
+    }
+  }
+  // if it is minimizing
+  else {
+    let best_score = Infinity;
+    for (let move of moves) {
+      if (move.score < best_score) {
+        best_score = move.score;
+        best_move = move;
+      }
+    }
+  }
+
+  if (best_move) {
+    return best_move;
+  }
+  // if there is no best move
+  else {
     return { score: 0 };
   }
 };
@@ -378,7 +511,13 @@ const doComputerTurn = (state) => {
 
   // apply minimax algorithm to determine best move
   const depth = randIntBetween(MINIMAX_DEPTH_MIN, MINIMAX_DEPTH_MAX); // we don't want the user to expect the computer to always make the same move
-  const move = minimax(JSON.parse(JSON.stringify(new_state)), depth, true);
+  const move = minimaxWithAlphaBetaPruning(
+    JSON.parse(JSON.stringify(new_state)),
+    depth,
+    true,
+    -Infinity,
+    Infinity
+  );
   console.log("> best move is: ", JSON.stringify(move));
 
   if (move) {
