@@ -196,26 +196,56 @@ const isTerminalState = (state) => {
   return false;
 };
 
-const minimax = (state, depth, isMaximizing) => {
-  // check for terminal state or depth 0. must be aware of isMaximizing
-  const winner = checkForWinner(state);
-  if (winner) {
-    if (isMaximizing) {
-      if (winner === "b") {
-        return { score: 1 };
-      } else {
-        return { score: -1 };
-      }
-    } else {
-      if (winner === "a") {
-        return { score: 1 };
-      } else {
-        return { score: -1 };
+const playerHasTwoInALine = (board, player) => {
+  for (let combination of WINNING_COMBINATIONS) {
+    let count = 0;
+    for (let [row, cell] of combination) {
+      if (board[row][cell] === player) {
+        count++;
       }
     }
+    if (count === 2) {
+      return true;
+    }
   }
-  if (depth === 0) {
-    return { score: 0 };
+  return false;
+};
+
+const heuristicOf = (state, isMaximizing) => {
+  const winner = checkForWinner(state);
+  if (winner) {
+    if (winner === "a") {
+      return isMaximizing ? -10 : 10;
+    } else {
+      // winner is b
+      return isMaximizing ? 10 : -10;
+    }
+  }
+  // no winner
+  // remember: there are no draws in this game
+  // see if we can win
+  // if (isMaximizing) {
+  //   if (playerHasTwoInALine(state.board, "b")) {
+  //     // could be a row, column. not a diagonal
+  //     return 5;
+  //   } else if (playerHasTwoInALine(state.board, "a")) {
+  //     return -5;
+  //   }
+  // } else {
+  //   if (playerHasTwoInALine(state.board, "a")) {
+  //     // could be a row, column. not a diagonal
+  //     return 5;
+  //   } else if (playerHasTwoInALine(state.board, "b")) {
+  //     return -5;
+  //   }
+  // }
+  return 0;
+};
+
+const minimax = (state, depth, isMaximizing) => {
+  // check for terminal state or depth 0. must be aware of isMaximizing
+  if (isTerminalState(state) || depth === 0) {
+    return { score: heuristicOf(state, isMaximizing) };
   }
 
   // the board size is 3x3
@@ -330,7 +360,7 @@ const doComputerTurn = (state) => {
   let new_state = { ...state };
 
   // apply minimax algorithm to determine best move
-  const move = minimax(JSON.parse(JSON.stringify(new_state)), 1, true);
+  const move = minimax(JSON.parse(JSON.stringify(new_state)), 2, true);
   console.log("> best move is: ", JSON.stringify(move));
 
   if (move) {
