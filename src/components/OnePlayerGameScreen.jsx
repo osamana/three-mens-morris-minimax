@@ -2,6 +2,39 @@ import { useContext, useState, useReducer } from "react";
 import { AppContext } from "../App";
 import GameBoard from "./GameBoard";
 
+const WINNING_COMBINATIONS = [
+  [
+    [0, 0],
+    [0, 1],
+    [0, 2],
+  ],
+  [
+    [1, 0],
+    [1, 1],
+    [1, 2],
+  ],
+  [
+    [2, 0],
+    [2, 1],
+    [2, 2],
+  ],
+  [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+  ],
+  [
+    [0, 1],
+    [1, 1],
+    [2, 1],
+  ],
+  [
+    [0, 2],
+    [1, 2],
+    [2, 2],
+  ],
+];
+
 const isPlacementComplete = (board) => {
   let count = 0;
   for (let row of board) {
@@ -25,51 +58,10 @@ const isCurrentPlayerPiece = (state, row, cell) => {
   return state.board[row][cell] === state.current_player;
 };
 
+// check if current state player is a winner
 const checkForWinner = (state) => {
   const { board, current_player } = state;
-  const winning_combinations = [
-    [
-      [0, 0],
-      [0, 1],
-      [0, 2],
-    ],
-    [
-      [1, 0],
-      [1, 1],
-      [1, 2],
-    ],
-    [
-      [2, 0],
-      [2, 1],
-      [2, 2],
-    ],
-    [
-      [0, 0],
-      [1, 0],
-      [2, 0],
-    ],
-    [
-      [0, 1],
-      [1, 1],
-      [2, 1],
-    ],
-    [
-      [0, 2],
-      [1, 2],
-      [2, 2],
-    ],
-    [
-      [0, 0],
-      [1, 1],
-      [2, 2],
-    ],
-    [
-      [0, 2],
-      [1, 1],
-      [2, 0],
-    ],
-  ];
-  for (let combination of winning_combinations) {
+  for (let combination of WINNING_COMBINATIONS) {
     let count = 0;
     for (let [row, cell] of combination) {
       if (board[row][cell] === current_player) {
@@ -81,6 +73,22 @@ const checkForWinner = (state) => {
     }
   }
   return null;
+};
+
+// check if a given player is a winner
+const winning = (board, player) => {
+  for (let combination of WINNING_COMBINATIONS) {
+    let count = 0;
+    for (let [row, cell] of combination) {
+      if (board[row][cell] === player) {
+        count++;
+      }
+    }
+    if (count === 3) {
+      return true;
+    }
+  }
+  return false;
 };
 
 const boardHasAtLeastPieces = (board, count) => {
@@ -113,7 +121,6 @@ const placePiece = (state, { row_index, cell_index }) => {
     };
     // check for winner
     if (boardHasAtLeastPieces(new_board, 5)) {
-      console.log("checking for winner");
       // check for winner
       const winner = checkForWinner({
         ...new_state,
@@ -181,36 +188,249 @@ const moveSelectedPiece = (state, { row_index, cell_index }) => {
   return state;
 };
 
+const isTerminalState = (state) => {
+  const winner = checkForWinner(state);
+  if (winner) {
+    return true;
+  }
+  return false;
+};
+
+const minimax = (state, depth, isMaximizing) => {
+  // check for terminal state or depth 0. must be aware of isMaximizing
+  const winner = checkForWinner(state);
+  if (winner) {
+    if (isMaximizing) {
+      if (winner === "b") {
+        return { score: 1 };
+      } else {
+        return { score: -1 };
+      }
+    } else {
+      if (winner === "a") {
+        return { score: 1 };
+      } else {
+        return { score: -1 };
+      }
+    }
+  }
+  if (depth === 0) {
+    return { score: 0 };
+  }
+
+  // the board size is 3x3
+  // define the list of possible moves
+  const moves = [];
+
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      // if it is a placement move
+      if (state.is_placement_phase) {
+        if (state.board[row][col] === null) {
+          moves.push({ location: [row, col], direction: null });
+        }
+      } else {
+        // if it is a movement move
+        // check if there is a piece in the cell
+        if (state.board[row][col] === (isMaximizing ? "b" : "a")) {
+          // check if the piece can move left
+          if (col > 0 && state.board[row][col - 1] === null) {
+            moves.push({ location: [row, col], direction: "left" });
+          }
+          // check if the piece can move right
+          if (col < 2 && state.board[row][col + 1] === null) {
+            moves.push({ location: [row, col], direction: "right" });
+          }
+          // check if the piece can move up
+          if (row > 0 && state.board[row - 1][col] === null) {
+            moves.push({ location: [row, col], direction: "up" });
+          }
+          // check if the piece can move down
+          if (row < 2 && state.board[row + 1][col] === null) {
+            moves.push({ location: [row, col], direction: "down" });
+          }
+        }
+      }
+    }
+  }
+
+  // loop and evaluate each move
+  for (let move of moves) {
+    // make a copy of the state
+    const new_state = { ...state };
+
+    // make the move
+    if (move.direction === null) {
+      // placement move
+      new_state.board[move.location[0]][move.location[1]] = isMaximizing
+        ? "b"
+        : "a";
+      new_state.is_placement_phase = isPlacementComplete(new_state.board)
+        ? false
+        : true;
+    } else {
+      // movement move
+      const [row, col] = move.location;
+      new_state.board[row][col] = null;
+      if (move.direction === "left") {
+        new_state.board[row][col - 1] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "right") {
+        new_state.board[row][col + 1] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "up") {
+        new_state.board[row - 1][col] = isMaximizing ? "b" : "a";
+      } else if (move.direction === "down") {
+        new_state.board[row + 1][col] = isMaximizing ? "b" : "a";
+      }
+    }
+
+    // switch player
+    new_state.current_player = isMaximizing ? "a" : "b";
+
+    // evaluate the move
+    const result = minimax(new_state, depth - 1, !isMaximizing);
+    move.score = result.score;
+  }
+
+  // find the best move
+  let best_move;
+  if (isMaximizing) {
+    let best_score = -Infinity;
+    for (let move of moves) {
+      if (move.score > best_score) {
+        best_score = move.score;
+        best_move = move;
+      }
+    }
+  } else {
+    let best_score = Infinity;
+    for (let move of moves) {
+      if (move.score < best_score) {
+        best_score = move.score;
+        best_move = move;
+      }
+    }
+  }
+
+  // if (depth === 2) {
+  //   console.log("best move is: ", JSON.stringify(best_move));
+  // }
+  if (best_move) {
+    return best_move;
+  } else {
+    return { score: 0 };
+  }
+};
+
+const doComputerTurn = (state) => {
+  /* sample move object
+    move = {location: [row, col], direction: "left"} // if direction is null, it is a placement move
+  */
+
+  // current player is already computer
+  let new_state = { ...state };
+
+  // apply minimax algorithm to determine best move
+  const move = minimax(JSON.parse(JSON.stringify(new_state)), 1, true);
+  console.log("> best move is: ", JSON.stringify(move));
+
+  if (move) {
+    // do move
+    if (move.direction) {
+      // move piece
+      const [row, cell] = move.location;
+      const new_board = [...state.board];
+      new_board[row][cell] = null;
+      switch (move.direction) {
+        case "left":
+          new_board[row][cell - 1] = state.current_player;
+          break;
+        case "right":
+          new_board[row][cell + 1] = state.current_player;
+          break;
+        case "up":
+          new_board[row - 1][cell] = state.current_player;
+          break;
+        case "down":
+          new_board[row + 1][cell] = state.current_player;
+          break;
+        default:
+          break;
+      }
+      new_state = {
+        ...new_state,
+        board: new_board,
+        current_player: "a",
+      };
+    } else {
+      // place piece
+      const [row, cell] = move.location;
+      const new_board = [...state.board];
+      new_board[row][cell] = state.current_player;
+      new_state = {
+        ...new_state,
+        board: new_board,
+        current_player: "a",
+      };
+    }
+
+    // printing the board after the move
+    console.log("board after move");
+    console.log(new_state.board);
+
+    // check for winner
+    if (boardHasAtLeastPieces(new_state.board, 5)) {
+      console.log("checking for winner");
+      // check for winner
+      const winner = checkForWinner({
+        ...new_state,
+        current_player: state.current_player,
+      });
+      if (winner) {
+        new_state.winner = winner;
+      }
+    }
+  }
+
+  new_state.current_player = "a";
+
+  return new_state;
+};
+
 // reducer function
 const reducer = (state, { type, payload }) => {
+  // player will always be "a" when a dispatch is called
   if (state.is_placement_phase) {
     // placement phase...
-    return placePiece(state, payload); // this changes player after the piece is placed
+    let new_state = placePiece(state, payload);
+    new_state = doComputerTurn(new_state); // this changes the player, flips it back to player a
+    // check if placement phase is over
+    if (isPlacementComplete(new_state.board)) {
+      new_state.is_placement_phase = false;
+    }
+    return new_state;
   }
-  // playing phase... player a is human, player b is computer (bot)
-  if (state.current_player === "a") {
-    if (state.selected_piece !== null) {
-      // reselecting a piece for the same player
-      if (
-        state.selected_piece[0] === payload.row_index &&
-        state.selected_piece[1] === payload.cell_index
-      ) {
-        return {
-          ...state,
-          selected_piece: null,
-        };
-      }
+  // playing phase...
+  if (state.selected_piece !== null) {
+    // reselecting a piece for the same player
+    if (
+      state.selected_piece[0] === payload.row_index &&
+      state.selected_piece[1] === payload.cell_index
+    ) {
+      return {
+        ...state,
+        selected_piece: null,
+      };
+    }
 
-      // changing selected piece
-      if (isCurrentPlayerPiece(state, payload.row_index, payload.cell_index)) {
-        return selectPiece(state, payload);
-      }
-
-      // if a piece is selected, move it to the new cell
-      return moveSelectedPiece(state, payload);
-    } else {
+    // changing selected piece
+    if (isCurrentPlayerPiece(state, payload.row_index, payload.cell_index)) {
       return selectPiece(state, payload);
     }
+
+    // if a piece is selected, move it to the new cell
+    return doComputerTurn(moveSelectedPiece(state, payload));
+  } else {
+    return selectPiece(state, payload);
   }
 };
 
