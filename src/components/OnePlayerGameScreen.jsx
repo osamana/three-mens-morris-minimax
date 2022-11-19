@@ -2,7 +2,14 @@ import { useContext, useState, useReducer } from "react";
 import { AppContext } from "../App";
 import GameBoard from "./GameBoard";
 
-const MINIMAX_DEPTH = 2;
+const MINIMAX_DEPTH_MIN = 2;
+const MINIMAX_DEPTH_MAX = 5;
+
+const randIntBetween = (min, max) => {
+  // inclusive
+  return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
 const WINNING_COMBINATIONS = [
   [
     [0, 0],
@@ -239,42 +246,23 @@ const heuristicOf = (state) => {
       // winner is b
       return 10;
     }
-  } else {
-    if (
-      state.is_placement_phase &&
-      playerHasTwoInALineAndThirdIsEmpty(state.board, "a")
-    ) {
+  } else if (!isPlacementComplete(JSON.parse(JSON.stringify(state.board)))) {
+    if (playerHasTwoInALineAndThirdIsEmpty(state.board, "a")) {
       console.log("a has two in a line and third is empty");
       return -5;
-    } else if (
-      state.is_placement_phase &&
-      playerHasTwoInALineAndThirdIsEmpty(state.board, "b")
-    ) {
+    } else if (playerHasTwoInALineAndThirdIsEmpty(state.board, "b")) {
       console.log("b has two in a line and third is empty");
-      return 5;
-    } else if (
-      !state.is_placement_phase &&
-      playerHasTwoInALine(state.board, "a")
-    ) {
-      console.log("a has two in a line");
-      return -5;
-    } else if (
-      !state.is_placement_phase &&
-      playerHasTwoInALine(state.board, "b")
-    ) {
-      console.log("b has two in a line");
       return 5;
     } else {
       return 0;
     }
-    return 0;
   }
 };
 
 const minimax = (state, depth, isMaximizing) => {
   // check for terminal state or depth 0. must be aware of isMaximizing
   if (isTerminalState(state) || depth === 0) {
-    return { score: heuristicOf(state) };
+    return { score: heuristicOf(JSON.parse(JSON.stringify(state))) };
   }
 
   // the board size is 3x3
@@ -316,7 +304,7 @@ const minimax = (state, depth, isMaximizing) => {
   // loop and evaluate each move
   for (let move of moves) {
     // make a copy of the state
-    const new_state = { ...state };
+    const new_state = JSON.parse(JSON.stringify(state));
 
     // make the move
     if (move.direction === null) {
@@ -389,11 +377,8 @@ const doComputerTurn = (state) => {
   let new_state = { ...state };
 
   // apply minimax algorithm to determine best move
-  const move = minimax(
-    JSON.parse(JSON.stringify(new_state)),
-    MINIMAX_DEPTH,
-    true
-  );
+  const depth = randIntBetween(MINIMAX_DEPTH_MIN, MINIMAX_DEPTH_MAX); // we don't want the user to expect the computer to always make the same move
+  const move = minimax(JSON.parse(JSON.stringify(new_state)), depth, true);
   console.log("> best move is: ", JSON.stringify(move));
 
   if (move) {
