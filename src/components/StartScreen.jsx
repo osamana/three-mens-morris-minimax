@@ -8,9 +8,8 @@ export default function StartScreen({
   return (
     <div>
       <h1>Start Screen</h1>
-      <p>Click to start</p>
-      <button onClick={() => onStart()}>Start</button>
-      <div>
+
+      <div className="select-menu">
         <label htmlFor="number_of_players">Number of players</label>
         <select
           id="number_of_players"
@@ -23,7 +22,7 @@ export default function StartScreen({
         </select>
       </div>
 
-      <div>
+      <div className="select-menu">
         <label htmlFor="difficulty">Difficulty</label>
         <select
           id="difficulty"
@@ -35,6 +34,10 @@ export default function StartScreen({
           <option value="normal">Normal</option>
           <option value="hard">Hard</option>
         </select>
+      </div>
+
+      <div className="game-button">
+        <button onClick={() => onStart()}>Start</button>
       </div>
     </div>
   );

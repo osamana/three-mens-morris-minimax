@@ -711,7 +711,9 @@ export default function OnePlayerGameScreen({ onRestart }) {
         Difficulty: {difficulty} | Number of players: {number_of_players}
       </p>
       <p>Click to restart</p>
-      <button onClick={onRestart}>Restart</button>
+      <div className="game-button">
+        <button onClick={onRestart}>Restart</button>
+      </div>
 
       <GameBoard
         board={state.board}

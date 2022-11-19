@@ -3,7 +3,9 @@ export default function FinishScreen({ onRestart }) {
     <div>
       <h1>Finish Screen</h1>
       <p>Click to restart</p>
-      <button onClick={onRestart}>Restart</button>
+      <div className="game-button">
+        <button onClick={onRestart}>Restart</button>
+      </div>{" "}
     </div>
   );
 }
