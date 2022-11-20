@@ -12,6 +12,9 @@ Project [documentation](https://docs.google.com/document/d/1zFGPASmEl5QDQZG_vAi3
 
 ## How to run
 
+Make sure you have [Node.js](https://nodejs.org/en/) installed.
+Then from the project root run:
+
 ```bash
 $ npm run start
 ```
