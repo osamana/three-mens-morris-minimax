@@ -241,15 +241,16 @@ export default function TwoPlayerGameScreen({ onRestart }) {
       <div className="game-button">
         <button onClick={onRestart}>Restart</button>
       </div>
-      
+
       <GameBoard
         board={state.board}
         selected_cell={state.selected_piece}
         dispatch={dispatch}
         winner={state.winner}
+        role={state.current_player}
       />
 
-      <p>{state.instruction_text}</p>
+      {/* <p>{state.instruction_text}</p> */}
     </div>
   );
 }

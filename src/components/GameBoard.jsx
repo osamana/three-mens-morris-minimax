@@ -48,7 +48,10 @@ export default function GameBoard({
     <div>
       <h1>Game Board</h1>
       {winner && (
-        <h2 style={{ color: "blue" }}>Winner: {displayPlayer(winner)}</h2>
+        <h1 style={{ color: "blue" }}>Winner: {displayPlayer(winner)}</h1>
+      )}
+      {number_of_players == 2 && role && (
+        <h2 style={{ color: "blue" }}>Current Player: {displayPlayer(role)}</h2>
       )}
 
       <div className={`board ${winner ? "disabled" : ""}`}>

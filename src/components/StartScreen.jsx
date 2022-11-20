@@ -10,7 +10,7 @@ export default function StartScreen({
       <h1>Start Screen</h1>
 
       <div className="select-menu">
-        <label htmlFor="number_of_players">Number of players</label>
+        <label htmlFor="number_of_players">Players</label>
         <select
           id="number_of_players"
           name="number_of_players"

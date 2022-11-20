@@ -3,7 +3,7 @@ import { AppContext } from "../App";
 import GameBoard from "./GameBoard";
 
 const MINIMAX_DEPTH_MIN = 2;
-const MINIMAX_DEPTH_MAX = 5;
+const MINIMAX_DEPTH_MAX = 4;
 
 const randIntBetween = (min, max) => {
   // inclusive
@@ -237,6 +237,39 @@ const playerHasTwoInALineAndThirdIsEmpty = (board, player) => {
   return false;
 };
 
+const playerHasThreeOccupyingTwoAdjacentRowsOrCols = (board, player) => {
+  // there are 3 As and 3 Bs on the board already
+  // check if there are 3 As that occupy 2 adjacent rows or columns
+  let locations_of_player_pieces = [];
+  for (let row_index = 0; row_index < board.length; row_index++) {
+    for (
+      let cell_index = 0;
+      cell_index < board[row_index].length;
+      cell_index++
+    ) {
+      if (board[row_index][cell_index] === player) {
+        locations_of_player_pieces.push([row_index, cell_index]);
+      }
+    }
+  }
+
+  if (locations_of_player_pieces.length !== 3) {
+    return false;
+  }
+
+  // check to see if the difference between the max and min row <= 1
+  let row_diff =
+    Math.max(...locations_of_player_pieces.map((x) => x[0])) -
+    Math.min(...locations_of_player_pieces.map((x) => x[0]));
+  let col_diff =
+    Math.max(...locations_of_player_pieces.map((x) => x[1])) -
+    Math.min(...locations_of_player_pieces.map((x) => x[1]));
+
+  if (row_diff <= 1 || col_diff <= 1) {
+    return true;
+  }
+};
+
 const heuristicOf = (state) => {
   const winner = checkForWinner(state);
   if (winner) {
@@ -252,6 +285,18 @@ const heuristicOf = (state) => {
       return -5;
     } else if (playerHasTwoInALineAndThirdIsEmpty(state.board, "b")) {
       console.log("b has two in a line and third is empty");
+      return 5;
+    } else {
+      return 0;
+    }
+  } else if (isPlacementComplete(JSON.parse(JSON.stringify(state.board)))) {
+    // there are 3 As and 3 Bs on the board
+    // check if there are 3 As that occupy two adjacent rows or columns
+    if (playerHasThreeOccupyingTwoAdjacentRowsOrCols(state.board, "a")) {
+      console.log("a has three occupying two adjacent rows or cols");
+      return -5;
+    } else if (playerHasThreeOccupyingTwoAdjacentRowsOrCols(state.board, "b")) {
+      console.log("b has three occupying two adjacent rows or cols");
       return 5;
     } else {
       return 0;
@@ -723,7 +768,7 @@ export default function OnePlayerGameScreen({ onRestart }) {
         role={state.current_player}
       />
 
-      <p>{state.instruction_text}</p>
+      {/* <p>{state.instruction_text}</p> */}
     </div>
   );
 }
